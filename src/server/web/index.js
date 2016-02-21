@@ -1,13 +1,13 @@
 import most from 'most';
 import express from 'express';
-import serialize from 'serialize-javascript';
 import path from 'path';
 
 import {run} from '@motorcycle/core';
 import htmlDriver from '@motorcycle/html';
 import {makeRouterDriver} from '@motorcycle/router';
 import {createServerHistory} from '@motorcycle/history';
-import {html, head, title, body, div, script} from '@motorcycle/dom';
+import {html, head, title, style, body, div, script} from '@motorcycle/dom';
+import getStyles from 'common/configure-styles';
 
 import App from '../../client/app';
 
@@ -18,11 +18,11 @@ function makeFullHTMLView(vtree, context) {
   return (
     html([
       head([
-        title('Motorcycle Isomorphism Boilerplate')
+        title('Motorcycle Isomorphism Boilerplate'),
+        style({attrs: {type: 'text/css'}}, getStyles())
       ]),
       body([
         div('.app-root', [vtree]),
-        script('#initial-client-context', `window.initialContext = ${serialize(context)};`),
         script({ props: {src: '/js/client.js' }})
       ])
     ])

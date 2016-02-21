@@ -40,7 +40,7 @@ While the isomorphic mantra tells us that the client and the server are effectiv
 
 As we grow our application and separate concerns, we start to realise that UI-specific requests, such as page rendering, are separate from non-UI-specific requests, such as data lookup and server state mutation. In the past, these will have all very commonly been handled by a single server-based application. A presentation tier will have handled UI-specific requests and responded with new representations of the user interface (pure server-side rendering), and a business tier will have handled requests to retrieve data and mutate state. In our case, all we're doing is accounting for the fact that we've moved almost the entire presentation tier to the client and bridged the gap to our business tier via network (HTTP) requests.
 
-The bottom line is that our server-side rendering code will probably end up making internal API calls via HTTP requests, even though the requests are happening internally, *and this is fine*. When we begin to scale our operations later, our client application code will thus be impacted minimally.
+The bottom line is that our server-side rendering code will probably end up making internal API calls via HTTP requests, even though the requests are happening internally, *and this is fine*. When we begin to scale our operations later and direct our pure API calls to a different server and/or (sub)domain, our client application code will thus be impacted minimally.
 
 ### Regarding node_modules
 
@@ -52,3 +52,5 @@ You'll notice the use of node_modules folders *within the source*. This is optio
 
 - router setup
 - http error codes (301,302,404,403,500,etc.), also 401/403 vs 404 (handling secure information leakage)
+- add eslint to gulp build process
+- fix ugly error message when babel compile fails

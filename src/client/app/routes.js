@@ -1,8 +1,7 @@
-import Home from './home';
+import Home from './areas/home';
+import configureRoutes from 'common/configure-routes';
 
-const routes = {
-  '/': Home,
-  // '*': NotFound,
-};
-
-export default routes;
+module.exports = configureRoutes([
+  { id: `home`, component: Home, path: `/` },
+  // { id: '404', component: NotFound, path: '*' }
+]);

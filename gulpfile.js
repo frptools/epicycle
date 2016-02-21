@@ -29,10 +29,11 @@ gulp.task('server', () => {
 
 const watcher = watchify(browserify(Object.assign({}, watchify.args, {
   entries: ['./src/client/index.js'],
-  paths: ['./node_modules', './components'],
-  debug: true,
-  transform: [babelify]
-})));
+  paths: ['./node_modules', './components']
+})).transform(babelify, {
+  global: true,
+  ignore: __dirname + '/node_modules'
+}));
 watcher.on('update', bundle);
 watcher.on('log', gutil.log);
 

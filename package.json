@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "description": "Isomorphic Boilerplate for Motorcycle.js",
   "scripts": {
-    "local": "nodemon dist/app/server/index.js -w dist/app -d 0.25",
-    "bsync": "browser-sync start --files ./dist/www/**/* --proxy localhost:1337 --no-open"
+    "local": "nodemon dist/app/server/index.js -w dist/app -d 0.5",
+    "bsync": "browser-sync start --config bs-config.js"
   },
+  "repository": "https://github.com/axefrog/motorcycle-isomorphic-boilerplate",
   "author": "Nathan Ridley",
   "license": "MIT",
   "dependencies": {
@@ -15,11 +16,12 @@
     "@motorcycle/html": "^1.1.0",
     "@motorcycle/http": "^2.2.0",
     "@motorcycle/router": "^1.0.0",
+    "autoprefixer": "^6.3.3",
     "express": "^4.13.4",
     "free-style": "^1.0.2",
     "history": "^2.0.0",
     "most": "^0.18.0",
-    "serialize-javascript": "^1.1.2"
+    "postcss-js": "^0.1.1"
   },
   "devDependencies": {
     "babel-eslint": "^5.0.0",
