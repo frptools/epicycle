@@ -1,6 +1,6 @@
 import most from 'most';
 
-module.exports = function Home(sources) {
+export default function Home(sources) {
 
   return {
 

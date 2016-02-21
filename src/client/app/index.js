@@ -1,6 +1,7 @@
 import most from 'most';
 import {p} from '@motorcycle/dom';
 import routes from './routes';
+import Sidebar from './sidebar';
 
 function makeView() {
   return most.just(
@@ -8,12 +9,17 @@ function makeView() {
   );
 }
 
-module.exports = function App(sources) {
+function run() {
+
+}
+
+export default function App(sources) {
   const {router} = sources;
   const {path$, value$} = router.define(routes);
   const matchedComponent$ = path$.zip(value$, (path, value) => value({...sources, router: router.path(path)}));
 
   // can't help but think the above needs to extracted to a helper
+  const sidebar = Sidebar(sources);
 
 
   return {
