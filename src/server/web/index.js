@@ -1,10 +1,15 @@
-const most = require('most');
-const express = require('express');
-const serialize = require('serialize-javascript');
-const {run} = require('@motorcycle/core');
-const {html, head, title, body, div, script} = require('@motorcycle/dom');
-const {default:htmlDriver} = require('@motorcycle/html');
-const {App} = require('./app');
+import most from 'most';
+import express from 'express';
+import serialize from 'serialize-javascript';
+import path from 'path';
+
+import {run} from '@motorcycle/core';
+import htmlDriver from '@motorcycle/html';
+import {makeRouterDriver} from '@motorcycle/router';
+import {createServerHistory} from '@motorcycle/history';
+import {html, head, title, body, div, script} from '@motorcycle/dom';
+
+import App from '../../client/app';
 
 // ----------------------------------------------------------------------------
 // TOP-LEVEL PAGE TEMPLATE
@@ -17,7 +22,7 @@ function makeFullHTMLView(vtree, context) {
       ]),
       body([
         div('.app-root', [vtree]),
-        script(`window.appContext = ${serialize(context)};`),
+        script('#initial-client-context', `window.initialContext = ${serialize(context)};`),
         script({ props: {src: '/js/client.js' }})
       ])
     ])
@@ -40,6 +45,7 @@ function generateResponse(url, callback) {
   const mainFn = makeServerMainFn(App, context$);
   const {sources} = run(mainFn, {
     DOM: htmlDriver,
+    router: makeRouterDriver(createServerHistory()),
     context: () => context$
   });
   sources.DOM.select(':root').observable
@@ -51,25 +57,23 @@ function generateResponse(url, callback) {
 // ----------------------------------------------------------------------------
 // EXPRESS SERVER
 
-(function() {
+const server = express();
 
-  var server = express();
-  server.use('/js', express.static(__dirname + '/../www/js'));
+server.use((req, res, next) => {
+  console.log(`WEB Request: ${req.method} ${req.url}`);
+  next();
+});
 
-  server.use(function (req, res) {
-    // ignore favicon requests
-    if(req.url === '/favicon.ico') {
-      res.writeHead(200, {'Content-Type': 'image/x-icon'});
-      res.end();
-      return;
-    }
-    console.log(`req: ${req.method} ${req.url}`);
-    generateResponse(req.url, html => res.send(html));
-  });
+server.use(express.static(path.resolve(__dirname + '/../../../www')));
 
-  const port = process.env.port||1337;
-  server.listen(port, () => {
-    console.log(`Now listening on port ${port}`);
-  });
+server.use(function (req, res) {
+  // ignore favicon requests
+  if(req.url === '/favicon.ico') {
+    res.writeHead(200, {'Content-Type': 'image/x-icon'});
+    res.end();
+    return;
+  }
+  generateResponse(req.url, html => res.send(html));
+});
 
-})();
+export default server;
