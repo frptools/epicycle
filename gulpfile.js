@@ -4,6 +4,7 @@ const watchify = require('watchify');
 const gulp = require('gulp');
 const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
+const eslint = require('gulp-eslint');
 const babel = require('gulp-babel');
 const gutil = require('gulp-util');
 const uglify = require('gulp-uglify');
@@ -28,11 +29,10 @@ gulp.task('server', () => {
 // BUILD/TRANSPILE/WATCH CLIENT APPLICATION
 
 const watcher = watchify(browserify(Object.assign({}, watchify.args, {
-  entries: ['./src/client/index.js'],
-  paths: ['./node_modules', './components']
+  entries: ['./src/client/index.js']
 })).transform(babelify, {
-  global: true,
-  ignore: __dirname + '/node_modules'
+  global: true, // make sure to also transpile node_modules folders that we're using for shared components
+  ignore: __dirname + '/node_modules' // don't transpile the root node_modules folder
 }));
 watcher.on('update', bundle);
 watcher.on('log', gutil.log);
@@ -44,11 +44,21 @@ function bundle() {
     .pipe(source('client.js'))
     .pipe(buffer())
     .pipe(sourcemaps.init({loadMaps: true}))
-    .pipe(uglify({mangle:false}))
+    .pipe(uglify({mangle:false})) // we disable mangling so that error messages for identifiers are easier to decipher
     .pipe(sourcemaps.write('./'))
     .pipe(gulp.dest('./dist/www/js'));
 }
 gulp.task('client', bundle);
+
+// ----------------------------------------------------------------------------
+// CODE LINTING
+
+gulp.task('lint', function () {
+  return gulp.src(['./src/**/*.js'])
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
+});
 
 // ----------------------------------------------------------------------------
 // COPY STATIC ASSETS TO DESTINATION
@@ -76,7 +86,7 @@ gulp.task('bgprocs', () => {
 // ----------------------------------------------------------------------------
 
 gulp.task('watch', function() {
-  gulp.watch(['./src/client/**/*.js', './src/server/**/*.js'], ['server']);
+  gulp.watch(['./src/client/**/*.js', './src/server/**/*.js'], ['lint', 'server']);
   gulp.watch(['./assets/**'], ['assets']);
 });
 

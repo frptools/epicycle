@@ -1,7 +1,10 @@
+import {configureRoutes} from 'common/routing-helpers';
 import Home from './areas/home';
-import configureRoutes from 'common/configure-routes';
+import About from './areas/about';
+import NotFound from './areas/errors/404';
 
 module.exports = configureRoutes([
-  { id: `home`, component: Home, path: `/` },
-  // { id: '404', component: NotFound, path: '*' }
+  { id: 'home', component: Home, path: '/' },
+  { id: 'about', component: About, path: '/about' },
+  { id: '404', component: NotFound, path: '*' }
 ]);

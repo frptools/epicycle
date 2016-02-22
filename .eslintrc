@@ -12,6 +12,6 @@
     "no-unused-vars": [1, {"vars": "all", "args": "none"}],
     "eol-last": 0,
     "no-undef": 2,
-    "quotes": [2, "backtick", "avoid-escape"]
+    "quotes": [2, "single", "avoid-escape"]
   }
 }

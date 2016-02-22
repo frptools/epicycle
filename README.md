@@ -5,6 +5,14 @@ This boilerplate project is designed to give you the fastest possible starting p
 
 As a final note before we get started, remember- this is boilerplate. You should change as much of it as you like to suit your personal development preferences. If you're ok with the chosen tools though, you should be able to simply start building your application.
 
+## Features
+
+- Isomorphic rendering of Motorcycle-based client application
+- Clear separation of server-side logic from presentation
+- Clean segregation of components allowing later extraction to separate components and microservices
+- One-stop-shop build process for development and testing
+- Integrated routing and component-isolated style management
+
 ## Setup & Installation
 
 Clone or extract this project to your development directory and run:
@@ -21,8 +29,10 @@ To save time, all of the following should be present globally. If not, remove th
 - **gulp** is required in order to build the project.
 
 ```text
-npm install -g browser-sync gulp eslint nodemon
+npm install -g browser-sync gulp eslint babel-eslint nodemon
 ```
+
+If you're using [Atom Linter](https://atom.io/packages/linter), you'll also want to install the [eslint plugin](https://github.com/AtomLinter/linter-eslint) and make sure "Use global ESLINT installation" is checked. Not doing so can cause the linter to trip up. Make sure eslint and babel-eslint are both installed globally.
 
 To build and run the application:
 

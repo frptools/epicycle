@@ -5,9 +5,9 @@ import path from 'path';
 import {run} from '@motorcycle/core';
 import htmlDriver from '@motorcycle/html';
 import {makeRouterDriver} from '@motorcycle/router';
-import {createServerHistory} from '@motorcycle/history';
+import {createServerHistory, createLocation} from '@motorcycle/history';
 import {html, head, title, style, body, div, script} from '@motorcycle/dom';
-import getStyles from 'common/configure-styles';
+import {configureStyles} from 'common/style-helpers';
 
 import App from '../../client/app';
 
@@ -19,7 +19,7 @@ function makeFullHTMLView(vtree, context) {
     html([
       head([
         title('Motorcycle Isomorphism Boilerplate'),
-        style({attrs: {type: 'text/css'}}, getStyles())
+        style({attrs: {type: 'text/css'}}, configureStyles())
       ]),
       body([
         div('.app-root', [vtree]),
@@ -32,22 +32,22 @@ function makeFullHTMLView(vtree, context) {
 // ----------------------------------------------------------------------------
 // SERVER-SIDE APP BOOTSTRAPPER
 
-function makeServerMainFn(main, context$) {
+function makeServerMainFn(main) {
   return function(sources) {
     const vtree$ = main(sources).DOM;
-    const wrappedVTree$ = most.combine(makeFullHTMLView, vtree$, context$);
+    const wrappedVTree$ = most.combine(makeFullHTMLView, vtree$);
     return { DOM: wrappedVTree$ };
   };
 }
 
 function generateResponse(url, callback) {
-  const context$ = most.just(url);
-  const mainFn = makeServerMainFn(App, context$);
+  const mainFn = makeServerMainFn(App);
+  const history = createServerHistory();
   const {sources} = run(mainFn, {
     DOM: htmlDriver,
-    router: makeRouterDriver(createServerHistory()),
-    context: () => context$
+    router: makeRouterDriver(history)
   });
+  history.push(createLocation({pathname: url}));
   sources.DOM.select(':root').observable
     .map(html => `<!doctype html>${html}`)
     .take(1)

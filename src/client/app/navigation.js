@@ -1,21 +1,26 @@
-// import most from 'most';
 import {paths} from './routes';
 import {nav, li, a} from '@motorcycle/dom';
-import configureStyles from 'common/configure-styles';
+import {configureStyles} from 'common/style-helpers';
 
 const css = configureStyles({
-  color: `red`
+  color: 'red'
 });
 
-export default function Navigation(sources) {
-  const {createHref:href} = sources.router;
-  const ahref = (url, text) => a({attrs: {href: href(url)}}, [text]);
-
-  return (
+function view(route$, ahref) {
+  return route$.map(({path}) =>
     nav(`.${css}`, [
-      li([ahref(paths.home), `Home`])//,
-      // li([ahref(paths.about), `About`]),
-      // li([ahref(paths.home), `Home`]),
+      li([ahref(paths.home, 'Home')]),
+      li([ahref(paths.about, 'About')])
+      // li([ahref(paths.home, `Home`)]),
     ])
   );
+}
+
+export default function Navigation(sources, page$) {
+  const ahref = (url, text) => a({attrs: {href: sources.router.createHref(url)}}, text);
+  const route$ = page$.map(page => page.route);
+  const view$ = view(route$, ahref);
+  return {
+    DOM: view$
+  };
 }
