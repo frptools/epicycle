@@ -1,15 +1,32 @@
 Isomorphic Boilerplate for Motorcycle.js
 ========================================
 
-This boilerplate project is designed to give you the fastest possible starting point when developing a new isomorphic web application using [Motorcycle.js](https://github.com/motorcyclejs/core). It is impossible to be unopinionated when it comes to build tools, because there are many of them and each has its pros and cons. This project is optimised for reasonably speedy build times, and build dependencies have been chosen on this basis, as well as a desire for relative simplicity. Obviously, for the purposes of isomorphism, you'll need to run node.js on the server.
+Starting a new web application these days is annoyingly overburdened with setup and ceremony, not to mention all of the repetitive groundwork required to establish a solid foundation for the rest of the application to be built upon. Depending on what you're trying to do, it can take anywhere from hours to days to get to a point where you're writing your actual project-specific code. This boilerplate project is designed to take that pain out of the equation and give you the fastest possible starting point when developing a new isomorphic web application using [Motorcycle.js](https://github.com/motorcyclejs/core).
 
-As a final note before we get started, remember- this is boilerplate. You should change as much of it as you like to suit your personal development preferences. If you're ok with the chosen tools though, you should be able to simply start building your application.
+#### Why Motorcycle?
 
-- [What's an isomorphic web application?](#whats-an-isomorphic-web-application)
+Simply put, it's ridiculously fast, while being idiomatically the same as [Cycle.js](http://cycle.js.org/). So if you know Cycle, you should be able to get into Motorcycle pretty easily. The underlying streams library is [Most](https://github.com/cujojs/most), which is a little different in behaviour to to RxJs, but it's literally two orders of magnitude faster, so the small learning curve is worth it.
+
+#### Build Tools
+
+It is impossible to be unopinionated when it comes to build tools, because there are many of them and each has its pros and cons. The project uses [gulp](http://gulpjs.com/), [Browserify](http://browserify.org/), [BrowserSync](http://www.browsersync.io/), [Babel](http://babeljs.io/) and [eslint](http://eslint.org/). Obviously, for the purposes of isomorphism, you'll need to run node.js on your production server, though you might wish to bulletproof it with a process manager [such as this one](http://strong-pm.io/).
+
+Remember, this is boilerplate. You should change as much of it as you like to suit your personal development preferences. If you're ok with the chosen tools though, you should be able to simply start building your application.
+
 - [Features](#features)
+- [What's an isomorphic web application?](#whats-an-isomorphic-web-application)
 - [Setup & Installation](#setup--installation)
 - [Usage and Best Practices](#usage-and-best-practices)
+- [Roadmap](#roadmap)
 
+## Features
+
+- Complete isomorphic foundation for bootstrapping Motorcycle-based client applications
+- Designed to be easy to break apart later for scalability
+- Clean shared component references allowing for later extraction to separate npm packages
+- One-stop-shop build process for development, testing and deployment builds
+- Router integration and page-specific metadata for enabling correct HTTP status codes
+- Style management provided by [FreeStyle](https://github.com/blakeembrey/free-style) for clean, component-isolated styling (easy to remove if traditional CSS files are preferred)
 
 ## What's an isomorphic web application?
 
@@ -20,15 +37,6 @@ In this day and age, with so many advanced JavaScript-based front-end frameworks
 3. **Proper URIs with different paths are harder to make use of**. Path-based URIs for each route often end up being avoided in favour of hash-based URIs. This happens because if we change the URI path based on client application state and then try to reload the page later at that same URI, either we'll get a 404 response because it's not the page we set up to bootstrap the application, or the server won't easily be able to determine if that URI is valid, thus necessitating a blanket 200 response for every request, which can have unintended side effects when the route was actually invalid.
 
 An isomorphic app solves all of these problems. For any initial request, it runs the client application server-side and captures the output. It then offers up a rendering of the initial state of the DOM, along with an appropriate HTTP status code depending on the validity of that request. In this way, the user sees content almost immediately (even if it takes a little longer for client-side functionality to boot up), search engines will likely do a better job of indexing the page and favouring it due to a fast response time, and the user can bookmark, link and share any URI that matches a valid route for the application. As a bonus, it also becomes possible to make forms and links work even if the app didn't load correctly in the client's browser, for whatever reason.
-
-## Features
-
-- Full foundational framework for bootstrapping Motorcycle-based client applications
-- Designed to be easy to break apart later for scalability
-- Clean shared component references allowing for later extraction to separate npm packages
-- One-stop-shop build process for development, testing and deployment builds
-- Router integration and page-specific metadata for enabling correct HTTP status codes
-- Style management provided by [FreeStyle](https://github.com/blakeembrey/free-style) for clean, component-isolated styling (easy to remove if traditional CSS files are preferred)
 
 ## Setup & Installation
 
@@ -86,16 +94,21 @@ You'll notice the use of node_modules folders *within the source*. This is optio
 
 **Do not confuse this use of node_modules with the external dependencies installed by npm**. In our *.gitignore* file, we ignore only the root node_modules folder, which is where npm will be putting external dependencies, and we allow node_modules folders elsewhere. In essence, just think of these descendant node_modules folders as shared components folders that can be easily and cleanly referenced within our application. This solves the nasty problem of parent path hell (`require("../../../../../../components/foo")`) and gives us a way to both share components that are area-specific, in addition to those that are used sitewide. Take a look at [Ryan Florence's folder layout article](https://gist.github.com/ryanflorence/daafb1e3cb8ad740b346), which was the inspiration for this decision. Note that, because we're using `node_modules` and not some build-tool-specific hackery of the `require` function, it means that at a later date it's trivial to separate common components and helpers into an external npm package in order to allow them to be shared among multiple projects.
 
-## TODO
+## Roadmap
 
 ### Functionality
 
-- router setup phase 2: (handle clicks)
-- http error codes (301,302,404,403,500,etc.), also 401/403 vs 404 (handling secure information leakage)
-- add cache busting to client.js href
-- resolve duplicate route emissions
+- demonstrate nested titles
+- tidy up example application structure (with neutral/minimalist styling)
+- subnavigation example
+- @cycle/isolate
+- add cache busting to client.js href (hash the file contents)
+- resolve multiple page emissions per route change (will need visualiser for this)
+- consider content negotiation
 
 ### Build Process
 
+- add tests
+- fix sourcemaps for server-side code
 - fix ugly error message when babel compile fails
 - fix uglify processing: https://github.com/gulpjs/gulp/blob/master/docs/recipes/browserify-uglify-sourcemap.md

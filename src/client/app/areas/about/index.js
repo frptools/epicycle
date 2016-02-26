@@ -2,8 +2,10 @@ import most from 'most';
 import {p} from '@motorcycle/dom';
 
 export default function About(sources) {
-
+  const page = {
+    view: p('All about us.')
+  };
   return {
-    DOM: most.just(p('All about us.'))
+    pages: most.just(page)
   };
 };

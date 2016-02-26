@@ -32,7 +32,7 @@ function attachBrowserifyTransforms(br) {
 
 function startWatchify() {
   watcher = attachBrowserifyTransforms(watchify(b));
-  watcher.on('update', changes => (console.log('UPDATE', changes),build.client()));
+  watcher.on('update', changes => build.client());
   watcher.on('log', gutil.log.bind(gutil, 'Browserify:'));
 }
 
@@ -117,7 +117,7 @@ gulp.task('reload:client', (() => {
 gulp.task('build:server', () => {
   return gulp.src(['./src/**/*.js', '!./src/client/index.js'])
     .pipe(plumber())
-    .pipe(buffer())
+    // .pipe(buffer())
     .pipe(sourcemaps.init({ loadMaps: true }))
     .pipe(babel())
     .pipe(sourcemaps.write('./'))

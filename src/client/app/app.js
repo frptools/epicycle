@@ -1,6 +1,7 @@
 import most from 'most';
 import {p, div} from '@motorcycle/dom';
 import {applyRouter} from 'common/routing-helpers';
+import {assign} from 'common/utils';
 import {routes} from './routes';
 import Navigation from './navigation';
 
@@ -9,57 +10,49 @@ function view(page, nav) {
     div('.app', [
       div('.app__nav', [nav]),
       div('.app__content', [page]),
-      p('Welcome to the jungle!')
+      p('Welcome to the jungle...')
     ])
   );
 }
 
-function extractViews(sinks) {
-  return sinks.context && sinks.context.view$ || sinks.DOM;
+function extractViewStream(sinks) {
+  return sinks.pages ? sinks.pages.map(page => page.view) : sinks.DOM;
 }
 
-function composeViews(page$, components) {
+function composePage(pageResult$, childComponents) {
   // extract each component's view stream, sorted by the component's key
   const componentViews = Array
-    .from(Object.keys(components))
+    .from(Object.keys(childComponents))
     .sort()
-    .map(key => extractViews(components[key]))
+    .map(key => extractViewStream(childComponents[key]))
     .filter(view$ => view$);
 
-  const pageView$ = page$.map(page => extractViews(page.sinks));
-  const views = [pageView$].concat(componentViews);
+  const pageView$ = pageResult$.map(result => extractViewStream(result.sinks));
+  const viewStreams = [pageView$].concat(componentViews);
 
   // collect the current page view and each child component's current view into
   // an array, but skip the combined combined result until every component's
   // first view has been emitted at least once
-  return most.combineArray((...args) => args, views)
+  return most.combineArray((...args) => args, viewStreams)
     .filter(args => args.every(arg => arg))
     .map(args => view(...args));
 }
 
-// function mergeSinks()
-
 export default function App(sources) {
-  // determine the
-  const page$ = applyRouter(sources, routes); // => stream of { route, sinks }
-  const components = {
-    nav: Navigation(sources, page$),
+  const pageResult$ = applyRouter(sources, routes); // => stream of { route, sinks }
+  const childComponents = {
+    nav: Navigation(sources, pageResult$),
   };
-  // const context$ = {
-  //   view$: composeViews(page$, components)
-  // };
-  const view$ = composeViews(page$, components);
+  const view$ = composePage(pageResult$, childComponents);
+  const page$ = pageResult$
+    .flatMap(result => result.sinks.pages)
+    .combine((page, view) => ({ page, view }), view$)
+    .filter(p => p.page && p.view)
+    .map(({ page, view }) => assign(page, { view }));
 
-  // 1. need to merge the component sinks and the page sinks with our own internal sinks
-  // 2. need to encapsulate view, state and metadata (metadata = route, result, etc.)
-  /*
-    where does the metadata come from?
-    if a catchall route is matched, the route path will be '*' - that's how we know
-  */
-
-  // page$.flatMap(page => )
+  // TODO: merge other sinks from child components (http, etc.)
 
   return {
-    DOM: view$
+    pages: page$
   };
 };
