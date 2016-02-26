@@ -64,14 +64,10 @@ You'll notice the use of node_modules folders *within the source*. This is optio
 
 - router setup phase 2: (handle clicks)
 - http error codes (301,302,404,403,500,etc.), also 401/403 vs 404 (handling secure information leakage)
-- add eslint to gulp build process
+- add cache busting to client.js href
+- resolve duplicate route emissions
 
 ### Build Process
 
-- https://www.browsersync.io/docs/gulp/ (make browsersync a dev dependency, run natively inside gulp)
-- https://www.npmjs.com/package/gulp-nodemon (as above, but for nodemon)
-- only invoke browsersync reload after both server build and client build is complete
-- improve code processing
-  - fix ugly error message when babel compile fails
-  - fix uglify processing: https://github.com/gulpjs/gulp/blob/master/docs/recipes/browserify-uglify-sourcemap.md
-  - ... or switch to webpack? undecided on this.
+- fix ugly error message when babel compile fails
+- fix uglify processing: https://github.com/gulpjs/gulp/blob/master/docs/recipes/browserify-uglify-sourcemap.md

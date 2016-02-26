@@ -4,6 +4,11 @@ import {p} from '@motorcycle/dom';
 export default function NotFound(sources) {
 
   return {
-    DOM: most.just(p('Page not found.'))
+    context: most.just({
+      view: p('Page not found.'),
+      metadata: {
+        status: 'notfound'
+      }
+    })
   };
 };

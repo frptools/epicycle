@@ -1,49 +1,31 @@
 import most from 'most';
-import {p, div} from '@motorcycle/dom';
-import {applyRouter} from 'common/routing-helpers';
-import {routes} from './routes';
-import Navigation from './navigation';
+import {h} from '@motorcycle/dom';
+// import {merge} from 'common/utils';
+import App from './app';
 
-function view(page, nav) {
-  return (
-    div('.app', [
-      div('.app__nav', [nav]),
-      div('.app__content', [page]),
-      p('Welcome to the jungle!')
-    ])
-  );
-}
+module.exports = function main(sources) {
+  const sinks = App(Object.assign({}, sources, { DOM: sources.context.DOM }));
 
-function composeViews(page$, components) {
-  // if page$ changes or any of the component DOM sinks changes, we re-render
-  const pageView$ = page$.map(page => page.sinks.DOM);
-  const componentViews = Array
-    .from(Object.keys(components))
-    .map(key => components[key].DOM)
-    .filter(view$ => view$);
-  const views = [pageView$].concat(componentViews);
-  return most.combineArray((...args) => args, views)
-    .filter(args => args.every(arg => arg))
-    .map(args => view(...args));
-}
+  // if the application returns a DOM sink, convert it to a context sink
+  if(sinks.DOM) {
+    const context$ = sinks.DOM.map(view => ({ view }));
+    sinks.context = (sinks.context ? sinks.context.merge(context$) : context$);
+  }
+  else if(!sinks.context) {
+    sinks.context = most.just({
+      view: h('p', 'No view available.'),
+      metadata: {
+        status: 'notfound'
+      }
+    });
+  }
 
-export default function App(sources) {
-  const page$ = applyRouter(sources, routes); // => stream of { route, sinks }
-  const components = {
-    nav: Navigation(sources, page$),
-  };
-  const view$ = composeViews(page$, components);
+  // sources.routes.combine((route, context) => {
+  //   merge({ metadata: { status: '' }})
+  //   if(route. context.metadata && context.metadata.status) {
+  //
+  //   }
+  // }, sinks.context);
 
-  // 1. need to merge the component sinks and the page sinks with our own internal sinks
-  // 2. need to encapsulate view, state and metadata (metadata = route, result, etc.)
-  /*
-    where does the metadata come from?
-    if a catchall route is matched, the route path will be '*' - that's how we know
-  */
-
-  // page$.flatMap(page => )
-
-  return {
-    DOM: view$
-  };
+  return sinks;
 };
