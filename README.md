@@ -19,7 +19,7 @@ In this day and age, with so many advanced JavaScript-based front-end frameworks
 2. **It's not great for search engine indexability and rankings**. Google is reportedly able to crawl sites that run JavaScript, but they're also known to optimize results with initial rendering speed in mind, so a slow-to-start site is going to suffer in search rankings.
 3. **Proper URIs with different paths are harder to make use of**. Path-based URIs for each route often end up being avoided in favour of hash-based URIs. This happens because if we change the URI path based on client application state and then try to reload the page later at that same URI, either we'll get a 404 response because it's not the page we set up to bootstrap the application, or the server won't easily be able to determine if that URI is valid, thus necessitating a blanket 200 response for every request, which can have unintended side effects when the route was actually invalid.
 
-An isomorphic app solves all of these. For any initial request, it runs the client application server-side and captures the output. It then offers up a rendering of the initial state of the DOM, along with an appropriate HTTP status code depending on the validity of that request. In this way, the user sees content almost immediately (even if it takes a little longer for client-side functionality to boot up), search engines will likely do a better job of indexing the page and favouring it due to a fast response time, and the user can bookmark, link and share any URI that matches a valid route for the application. As a bonus, it also becomes possible to make forms and links work even if the app didn't load correctly in the client's browser, for whatever reason.
+An isomorphic app solves all of these problems. For any initial request, it runs the client application server-side and captures the output. It then offers up a rendering of the initial state of the DOM, along with an appropriate HTTP status code depending on the validity of that request. In this way, the user sees content almost immediately (even if it takes a little longer for client-side functionality to boot up), search engines will likely do a better job of indexing the page and favouring it due to a fast response time, and the user can bookmark, link and share any URI that matches a valid route for the application. As a bonus, it also becomes possible to make forms and links work even if the app didn't load correctly in the client's browser, for whatever reason.
 
 ## Features
 
@@ -27,7 +27,8 @@ An isomorphic app solves all of these. For any initial request, it runs the clie
 - Designed to be easy to break apart later for scalability
 - Clean shared component references allowing for later extraction to separate npm packages
 - One-stop-shop build process for development, testing and deployment builds
-- Integrated routing and component-isolated style management
+- Router integration and page-specific metadata for enabling correct HTTP status codes
+- Style management provided by [FreeStyle](https://github.com/blakeembrey/free-style) for clean, component-isolated styling (easy to remove if traditional CSS files are preferred)
 
 ## Setup & Installation
 
@@ -58,6 +59,14 @@ gulp
 The build process will start a local node.js dev server and a BrowserSync process, proxied to the dev server, and start watching your source files for changes.
 
 To view the application, open [http://localhost:3000](http://localhost:3000) in your browser. If you're already running BrowserSync for another project, the port may be different, so pay attention to the gulp console output for the actual port number.
+
+**For a production build:**
+
+```text
+gulp build:dist
+```
+
+Client bundles are compressed and minified for production builds only, as the refresh time is otherwise too slow when making many changes during development.
 
 ## Usage and Best Practices
 
