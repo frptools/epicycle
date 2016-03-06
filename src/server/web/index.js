@@ -1,26 +1,30 @@
 import express from 'express';
 import path from 'path';
-
+import hold from '@most/hold';
 import {run} from '@motorcycle/core';
 import htmlDriver from '@motorcycle/html';
-import {makeRouterDriver} from '@motorcycle/router';
-import {makePageDriver} from 'common/page-driver';
 import {createServerHistory, createLocation} from '@motorcycle/history';
-import {html, head, title, style, body, div, script} from '@motorcycle/dom';
-import {configureStyles} from 'common/style-helpers';
-import {assign} from 'common/utils';
+import {html, head, title, link, body, div, script} from '@motorcycle/dom';
+import {makeRouterDriver} from '@motorcycle/router';
+import {makeStateDriver} from 'common/state-driver';
+import {assign, logError} from 'common/utils';
 
 import App from '../../client/app';
 
-function makeFullHTMLView(page) {
+function makeDocumentView({ vtree, model }) {
+  const titleEl = [];
+  if(model.title) {
+    titleEl.push(title(model.title));
+  }
   return (
     html([
       head([
-        title(page.title || 'Motorcycle Isomorphism Boilerplate'),
-        style({attrs: {type: 'text/css'}}, configureStyles())
+        ...titleEl,
+        link({attrs: {rel: 'stylesheet', type: 'text/css', href:'https://fonts.googleapis.com/css?family=PT+Sans:400,700|Roboto:400,700,400italic,700italic'}}),
+        link({attrs: {rel: 'stylesheet', type: 'text/css', href:'css/styles.css'}})
       ]),
       body([
-        div('.app-root', [page.view]),
+        div('.app-root', [vtree]),
         script({ props: {src: '/js/client.js' }})
       ])
     ])
@@ -30,24 +34,31 @@ function makeFullHTMLView(page) {
 function makeServerMainFn(main) {
   return function(sources) {
     const sinks = main(sources);
-    const pages = sinks.pages.map(page => assign(page, { view: makeFullHTMLView(page) }));
-    return assign(sinks, { pages });
+    const state = sinks.state.map(state => {
+      const newState = assign(state, { vtree: makeDocumentView(state) });
+      return newState;
+    });
+    return assign(sinks, { state });
   };
 }
 
-function generateResponse(url, callback) {
+function generateResponse(req, callback) {
   const mainFn = makeServerMainFn(App);
   const history = createServerHistory();
   const {sources} = run(mainFn, {
-    pages: makePageDriver(htmlDriver),
+    state: makeStateDriver(htmlDriver),
     router: makeRouterDriver(history)
   });
-  sources.pages.DOM.select(':root').observable
-    .map(html => `<!doctype html>${html}`)
-    .zip((html, page) => ({ html, page }), sources.pages.page$)
+  const html$ = hold(sources.state.DOM
+      .select(':root').observable
+      .map(html => `<!doctype html>${html}`));
+  const state$ = hold(sources.state.state$);
+  html$
+    .zip((html, state) => ({ html, state }), state$)
     .take(1)
-    .observe(callback);
-  history.push(createLocation({ pathname: url }));
+    .observe(callback)
+    .catch(logError);
+  history.push(createLocation({ pathname: req.url }));
 }
 
 // ----------------------------------------------------------------------------
@@ -62,13 +73,14 @@ server.use((req, res, next) => {
 server.use(express.static(path.resolve(__dirname + '/../../../www')));
 
 server.use(function (req, res) {
-  // ignore favicon requests
+  // ignore favicon requests (should have been served before now via express.static)
   if(req.url === '/favicon.ico') {
     res.writeHead(200, {'Content-Type': 'image/x-icon'});
     res.end();
     return;
   }
-  generateResponse(req.url, ({ html, page: { status } }) => {
+
+  generateResponse(req, ({ html, state: { model: { status } } }) => {
     let statusCode;
     switch(status.type) {
       case 'notfound':

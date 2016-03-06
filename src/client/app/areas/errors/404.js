@@ -1,12 +1,20 @@
-import most from 'most';
 import {p} from '@motorcycle/dom';
+import {makePageComponent} from 'common/component-helpers';
 
-export default function NotFound(sources) {
+function makeView(state) {
+  return (
+    p('Page not found.')
+  );
+}
 
+function makeModel(state) {
   return {
-    pages: most.just({
-      view: p('Page not found.'),
-      status: 'notfound'
-    })
+    title: 'Page Not Found',
+    status: 'notfound'
   };
-};
+}
+
+export default makePageComponent({
+  makeView,
+  makeModel
+});

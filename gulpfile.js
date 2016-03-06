@@ -9,13 +9,19 @@ const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
 const eslint = require('gulp-eslint');
 const babel = require('gulp-babel');
+const autoprefixer = require('autoprefixer');
+const concat = require('gulp-concat');
+const cssmin = require('gulp-cssmin');
+const postcss = require('gulp-postcss');
+const stylus = require('gulp-stylus');
 const gutil = require('gulp-util');
 const uglify = require('gulp-uglify');
+const mocha = require('gulp-mocha');
 const sourcemaps = require('gulp-sourcemaps');
 const plumber = require('gulp-plumber');
 const runseq = require('run-sequence');
 const rimraf = require('rimraf');
-const server = require('gulp-develop-server');
+const child_process = require('child_process');
 const serverConfig = require('./src/server/node_modules/common/server-config');
 
 let watcher, b = browserify(Object.assign({}, watchify.args, {
@@ -53,23 +59,31 @@ const build = (() => {
   const start = debounce(function build() {
     const prebuilds = [], targets = [], postbuilds = [], callbacks = [];
     const addcb = done => typeof fn === 'function' && callbacks.push(done);
+    let fullReload = false;
     if(next.client || next.server) {
       prebuilds.push('prebuild:lint:dev');
+      fullReload = true;
     }
     if(next.server) {
       targets.push('build:server');
       postbuilds.push('reload:server');
+      fullReload = true;
       addcb(next.server);
     }
     if(next.client) {
       targets.push('build:client:dev');
+      fullReload = true;
       addcb(next.client);
     }
     if(next.assets) {
       postbuilds.push('postbuild:assets');
+      fullReload = true;
       addcb(next.assets);
     }
-    postbuilds.push('reload:client');
+    if(next.styles) {
+      postbuilds.push('build:styles:dev');
+    }
+    postbuilds.push(fullReload ? 'reload:client' : 'reload:client:css');
     next = {};
     const tasks = [...prebuilds, targets, ...postbuilds].filter(t => t.length);
     runseq(...tasks, err => callbacks.forEach(fn => fn(err)));
@@ -77,29 +91,31 @@ const build = (() => {
   return {
     client: done => add('client', done),
     assets: done => add('assets', done),
-    server: done => add('server', done)
+    server: done => add('server', done),
+    styles: done => add('styles', done)
   };
 })();
 
-// ----------------------------------------------------------------------------
+function initServer() {
+  let child = null;
+  const run = done => {
+    if(child) {
+      child.kill();
+      child = null;
+    }
+    else {
+      child = child_process
+        .fork('./dist/app/server/index.js')
+        .on('exit', () => run());
+    }
+    if(done) {
+      done();
+    }
+  };
+  return run;
+};
 
-gulp.task('reload:server', (() => {
-  let started = false;
-  function start(done) {
-    server.listen({
-      path: './dist/app/server/index.js',
-      args: ['--color'],
-      env: Object.assign({}, process.env, { PORT: serverConfig.port })
-    }, err => {
-      if(!err) started = true;
-      done(err);
-    });
-  }
-  const restart = server.restart.bind(server);
-  return done => (started ? restart : start)(done);
-})());
-
-gulp.task('reload:client', (() => {
+const loadBrowserSync = (() => {
   let started = false;
   function start(done) {
     browserSync.init({
@@ -110,19 +126,9 @@ gulp.task('reload:client', (() => {
       done(err);
     });
   }
-  const restart = done => (browserSync.reload(), done());
-  return done => (started ? restart : start)(done);
-})());
-
-gulp.task('build:server', () => {
-  return gulp.src(['./src/**/*.js', '!./src/client/index.js'])
-    .pipe(plumber())
-    // .pipe(buffer())
-    .pipe(sourcemaps.init({ loadMaps: true }))
-    .pipe(babel())
-    .pipe(sourcemaps.write('./'))
-    .pipe(gulp.dest('./dist/app'));
-});
+  const restart = (arg, done) => (browserSync.reload(arg), done());
+  return function(done) { return started ? restart(arguments[1], done) : start(done); };
+})();
 
 function buildClient(b, useUglify, done) {
   let stream = b.bundle()
@@ -139,8 +145,26 @@ function buildClient(b, useUglify, done) {
     .on('end', done);
 }
 
-gulp.task('build:client:dev', done => buildClient(watcher, false, done));
-gulp.task('build:client:prod', done => buildClient(attachBrowserifyTransforms(b), true, done));
+function buildStyles(compress, done) {
+  const autoprefixerOptions = {
+    remove: false,
+    browsers: ['> 3%', 'last 2 versions']
+  };
+  let stream = gulp.src('./src/styles/index.styl')
+    .pipe(sourcemaps.init())
+    .pipe(stylus({
+      compress: !!compress,
+      'include css': true
+    }))
+    .pipe(postcss([ autoprefixer(autoprefixerOptions) ]))
+    .pipe(concat('styles.css'));
+  if(compress)
+    stream = stream.pipe(cssmin());
+  stream = stream
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest('./dist/www/css'))
+    .on('end', done);
+}
 
 function runLinter(failAfterError) {
   let stream = gulp.src('./src/**/*.js')
@@ -151,28 +175,86 @@ function runLinter(failAfterError) {
     stream = stream.pipe(eslint.failAfterError()); // causes watchify to stop working for some reason
   return stream;
 }
-gulp.task('prebuild:lint:dev', () => runLinter(false));
-gulp.task('prebuild:lint:prod', () => runLinter(true));
-gulp.task('prebuild:clean', cb => rimraf('./dist', cb));
 
-gulp.task('postbuild:assets', () => {
+function runTests() {
+  const slash = require('path').sep;
+  const babelrc = Object.assign({
+    ignore: filename => filename.indexOf(`${slash}src${slash}`) > -1
+  }, JSON.parse(require('fs').readFileSync('.babelrc')));
+  require('babel-register')(babelrc);
+  return gulp.src(['./src/**/tests/**/*.js', './src/**/tests.js'], { read: false })
+    .pipe(mocha({ timeout: 5000 }));
+}
+
+function buildServer() {
+  return gulp.src(['./src/**/*.js', '!./src/client/index.js', '!tests/**/*.js', '!tests.js'])
+    .pipe(plumber())
+    // .pipe(buffer())
+    .pipe(sourcemaps.init({ loadMaps: true }))
+    .pipe(babel())
+    .pipe(sourcemaps.write('./'))
+    .pipe(gulp.dest('./dist/app'));
+}
+
+function copyAssets() {
   return gulp.src('./assets/**/*')
     .pipe(plumber())
     .pipe(gulp.dest('./dist/www'));
-});
+}
 
-gulp.task('watch', () => {
-  gulp.watch(['./src/client/**/*.js', '!./src/client/index.js', './src/server/**/*.js'], build.server);
-  gulp.watch(['./assets/**'], build.assets);
-});
-
-gulp.task('build:dev', done => {
+function buildAndWatchAll(done) {
   startWatchify();
   build.server();
   build.client();
+  build.styles();
   build.assets(done);
+}
+
+function buildForProduction(done) {
+  runseq(
+    'prebuild:clean',
+    'prebuild:lint:prod',
+    'prebuild:tests',
+    ['build:server', 'build:client:prod', 'build:styles:prod'],
+    'postbuild:assets',
+    done
+  );
+}
+
+// ----------------------------------------------------------------------------
+
+gulp.task('reload:server', initServer());
+gulp.task('reload:client', loadBrowserSync);
+gulp.task('reload:client:css', done => loadBrowserSync(done, '*.css'));
+
+gulp.task('prebuild:clean', cb => rimraf('./dist', cb));
+gulp.task('prebuild:lint:dev', () => runLinter(false));
+gulp.task('prebuild:lint:prod', () => runLinter(true));
+gulp.task('prebuild:tests', runTests);
+
+gulp.task('build:server', buildServer);
+gulp.task('build:client:dev', done => buildClient(watcher, false, done));
+gulp.task('build:client:prod', done => buildClient(attachBrowserifyTransforms(b), true, done));
+gulp.task('build:styles:dev', done => buildStyles(false, done));
+gulp.task('build:styles:prod', done => buildStyles(true, done));
+gulp.task('build:dev', ['prebuild:clean'], buildAndWatchAll);
+
+gulp.task('postbuild:assets', copyAssets);
+
+gulp.task('watch', () => {
+  gulp.watch(['./src/client/**/*.js', '!./src/client/index.js', './src/server/**/*.js', './src/node_modules/**/*.js'], build.server);
+  gulp.watch(['./src/**/*.styl'], build.styles);
+  gulp.watch(['./assets/**'], build.assets);
 });
+gulp.task('watch:tests', () => gulp.watch(['./src/**/*.js'], ['prebuild:tests']));
 
-gulp.task('build:dist', done => runseq('prebuild:clean', 'prebuild:lint:prod', ['build:server', 'build:client:prod'], 'postbuild:assets', done));
+// ----------------------------------------------------------------------------
 
+// run in isolation while writing unit tests
+gulp.task('test:dev', ['prebuild:tests', 'watch:tests']);
+
+// run when a deployment build is required
+gulp.task('build:dist', buildForProduction);
+
+// run for general development (does not include unit tests)
 gulp.task('default', ['build:dev', 'watch']);

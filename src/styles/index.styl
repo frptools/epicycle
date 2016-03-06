@@ -1,0 +1,10 @@
+/*
+  To keep styles bundled with components, save the styles alongside the component's JavaScript files and use the
+  convention 'styles.styl' OR 'styles/index.styl'. The imports below will first import shared globals, then target
+  the file/folder name 'styles' as the standard entrypoint for styles scoped to a particular page or component.
+*/
+
+@require 'variables'
+@require 'normalize.css'
+@require 'html'
+@require '../client/app/**/styles'

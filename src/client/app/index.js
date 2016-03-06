@@ -1,32 +1,35 @@
-import most from 'most';
-import {h} from '@motorcycle/dom';
 import {assign} from 'common/utils';
 import App from './app';
 
+function sanitizeStatus(state) {
+  const model = state.model || {};
+  if(model.status && typeof model.status === 'object') {
+    return state;
+  }
+  const newModel = assign(model, { status: { type: model.status || 'found' }});
+  return assign(state, { model: newModel });
+}
+
 export default function main(sources) {
-  // hide `pages` as a source and instead expose `DOM`, as per the standard pattern
-  const convertedSources = assign(sources, { DOM: sources.pages.DOM, pages: void 0 });
+  // applyAPI must be called first in order to surface its internals for general consumption
+  const convertedSources = sources.state.applyAPI(sources);
   const sinks = App(convertedSources);
 
-  // if the application returns a DOM sink, convert it to a page sink
   if(sinks.DOM) {
-    console.log('DOM :(');
-    const page$ = sinks.DOM.map(view => ({ view }));
-    sinks.pages = (sinks.pages ? sinks.pages.merge(page$) : page$);
+    console.warning('App should return a state sink, rather than a DOM sink');
+    const state$ = sinks.DOM.map(vtree => ({ vtree }));
+    sinks.state = (sinks.state ? sinks.state.merge(state$) : state$);
     delete sinks.DOM;
   }
-  else if(!sinks.pages) { // this shouldn't generally happen
-    sinks.pages = most.just({
-      view: h('p', 'No view available.'),
-      status: 'notfound'
-    });
+  else if(!sinks.state) {
+    throw new Error('App component failed to return a state sink');
   }
 
   // specifying a string value for `status` is just an upstream convenience
-  sinks.pages = sinks.pages.map(page =>
-    (!page.status || typeof page.status === 'string')
-      ? assign(page, { status: { type: page.status || 'found' } })
-      : page);
+  // for when additional context values are not required (as opposed to cases
+  // like 302 redirects, which also require a location value).
+  sinks.state = sinks.state.map(sanitizeStatus);
+  // sinks.state = sinks.state.map(debug(sanitizeStatus, 'STATE'));
 
   return sinks;
 };

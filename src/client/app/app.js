@@ -1,58 +1,35 @@
-import most from 'most';
-import {p, div} from '@motorcycle/dom';
-import {applyRouter} from 'common/routing-helpers';
-import {assign} from 'common/utils';
-import {routes} from './routes';
-import Navigation from './navigation';
+import {h1, div} from '@motorcycle/dom';
+import {makePageComponent} from 'common/component-helpers';
+import {routes, paths} from './routes';
+import Navigation from './components/navigation';
 
-function view(page, nav) {
+function makeView({ nav, page, model }) {
   return (
     div('.app', [
-      div('.app__nav', [nav]),
-      div('.app__content', [page]),
-      p('Welcome to the jungle...')
+      div('.app__nav', [nav.vtree]),
+      h1(model.heading),
+      div('.app__content', [page.vtree])
     ])
   );
 }
 
-function extractViewStream(sinks) {
-  return sinks.pages ? sinks.pages.map(page => page.view) : sinks.DOM;
-}
-
-function composePage(pageResult$, childComponents) {
-  // extract each component's view stream, sorted by the component's key
-  const componentViews = Array
-    .from(Object.keys(childComponents))
-    .sort()
-    .map(key => extractViewStream(childComponents[key]))
-    .filter(view$ => view$);
-
-  const pageView$ = pageResult$.map(result => extractViewStream(result.sinks));
-  const viewStreams = [pageView$].concat(componentViews);
-
-  // collect the current page view and each child component's current view into
-  // an array, but skip the combined combined result until every component's
-  // first view has been emitted at least once
-  return most.combineArray((...args) => args, viewStreams)
-    .filter(args => args.every(arg => arg))
-    .map(args => view(...args));
-}
-
-export default function App(sources) {
-  const pageResult$ = applyRouter(sources, routes); // => stream of { route, sinks }
-  const childComponents = {
-    nav: Navigation(sources, pageResult$),
-  };
-  const view$ = composePage(pageResult$, childComponents);
-  const page$ = pageResult$
-    .flatMap(result => result.sinks.pages)
-    .combine((page, view) => ({ page, view }), view$)
-    .filter(p => p.page && p.view)
-    .map(({ page, view }) => assign(page, { view }));
-
-  // TODO: merge other sinks from child components (http, etc.)
-
+function makeModel({ page: { model } }) {
+  const appTitle = 'Epicycle: Isomorphic Foundation';
+  const title = model && model.title ? `${appTitle} / ${model.title}` : appTitle;
+  const status = model.status;
+  const heading = model.heading || model.title || appTitle;
   return {
-    pages: page$
+    title,
+    status,
+    heading // propagate these automatically if not manually specified
   };
-};
+}
+
+export default makePageComponent({
+  routes,
+  makeView,
+  makeModel,
+  main: sources => ({
+    nav: Navigation(sources, paths),
+  })
+});

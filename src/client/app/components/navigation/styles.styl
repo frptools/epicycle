@@ -1,0 +1,26 @@
+.nav-primary
+  margin-bottom 30px
+  &__links
+    display flex
+    margin 0
+    padding 0
+  &__link
+    list-style-type none
+    + .nav-primary__link:not(.nav-primary__link--active)
+      margin-left 20px
+    + .nav-primary__link.nav-primary__link--active
+      margin-left 10px
+    a
+      display block
+      color $color4
+      border-bottom 2px solid #e7e7e7
+      padding-bottom 5px
+      &:hover
+        color $link-hover-color
+        border-bottom-color $link-hover-color
+    &--active
+      padding 10px
+      margin -10px
+      background-color #f7f7f7
+      a
+        border-bottom-color $link-hover-color

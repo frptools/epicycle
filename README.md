@@ -1,7 +1,13 @@
-Isomorphic Boilerplate for Motorcycle.js
-========================================
+**Epicycle** :: node.js + Motorcycle.js == Isomorphism
+==================================================
 
-Starting a new web application these days is annoyingly overburdened with setup and ceremony, not to mention all of the repetitive groundwork required to establish a solid foundation for the rest of the application to be built upon. Depending on what you're trying to do, it can take anywhere from hours to days to get to a point where you're writing your actual project-specific code. This boilerplate project is designed to take that pain out of the equation and give you the fastest possible starting point when developing a new isomorphic web application using [Motorcycle.js](https://github.com/motorcyclejs/core).
+Epicycle is a foundational/boilerplate project for building reactive, isomorphic applications with [Motorcycle.js](https://github.com/motorcyclejs/core) and [node.js](https://nodejs.org/en/).
+
+_NOTE: This project is a work in progress. The foundation should work pretty well, but the example application structure- the pages, navigation and content displayed- is unfinished, as is documentation for some of the abstractions I developed to support clean handling of navigation between pages._
+
+## Introduction
+
+Starting a new web application these days is annoyingly overburdened with setup and ceremony, not to mention all of the repetitive groundwork required to establish a solid foundation for the rest of the application to be built upon. Depending on what you're trying to do, it can take anywhere from hours to days to get to a point where you're writing your actual project-specific code. This project is designed to take that pain out of the equation and give you the fastest possible starting point when developing a new isomorphic web application using [Motorcycle.js](https://github.com/motorcyclejs/core).
 
 #### Why Motorcycle?
 
@@ -9,14 +15,17 @@ Simply put, it's ridiculously fast, while being idiomatically the same as [Cycle
 
 #### Build Tools
 
-It is impossible to be unopinionated when it comes to build tools, because there are many of them and each has its pros and cons. The project uses [gulp](http://gulpjs.com/), [Browserify](http://browserify.org/), [BrowserSync](http://www.browsersync.io/), [Babel](http://babeljs.io/) and [eslint](http://eslint.org/). Obviously, for the purposes of isomorphism, you'll need to run node.js on your production server, though you might wish to bulletproof it with a process manager [such as this one](http://strong-pm.io/).
+It is impossible to be unopinionated when it comes to build tools, because there are many of them and each has its pros and cons. The project uses [gulp](http://gulpjs.com/), [Browserify](http://browserify.org/), [BrowserSync](http://www.browsersync.io/), [Babel](http://babeljs.io/), [eslint](http://eslint.org/) and [mocha](https://mochajs.org/) for testing. It also comes bundled with basic [Stylus](https://github.com/stylus/stylus) support by default, but it's very easy to swap out if you prefer something such as Sass, Less or inline JavaScript-based styles. Obviously, for the purposes of isomorphism, you'll need to run node.js on your production server, though you may wish to bulletproof it with a process manager [such as this one](http://strong-pm.io/).
 
-Remember, this is boilerplate. You should change as much of it as you like to suit your personal development preferences. If you're ok with the chosen tools though, you should be able to simply start building your application.
+Remember, Epicycle is more boilerplate than it is framework. You should change as much of it as you like to suit your personal development preferences. It does come with a base library of helpers to facilitate the differences between "widget" components and "page" components, particularly with respect to concerns such as HTTP status codes, document titles, etc., which you'll spend a lot of time implementing support for if you try to do it yourself. If you're ok with the chosen defaults though, you should be able to hit the ground running and start building your application straight away.
 
+- [Introduction](#introduction)
 - [Features](#features)
 - [What's an isomorphic web application?](#whats-an-isomorphic-web-application)
 - [Setup & Installation](#setup--installation)
+- [Unit Tests](#unit-tests)
 - [Usage and Best Practices](#usage-and-best-practices)
+- [The State Driver, Component Helpers and Routing](#the-state-driver-component-helpers-and-routing)
 - [Roadmap](#roadmap)
 
 ## Features
@@ -26,7 +35,6 @@ Remember, this is boilerplate. You should change as much of it as you like to su
 - Clean shared component references allowing for later extraction to separate npm packages
 - One-stop-shop build process for development, testing and deployment builds
 - Router integration and page-specific metadata for enabling correct HTTP status codes
-- Style management provided by [FreeStyle](https://github.com/blakeembrey/free-style) for clean, component-isolated styling (easy to remove if traditional CSS files are preferred)
 
 ## What's an isomorphic web application?
 
@@ -40,7 +48,7 @@ An isomorphic app solves all of these problems. For any initial request, it runs
 
 ## Setup & Installation
 
-Clone the repository or [download a zip of the source code](https://github.com/axefrog/motorcycle-isomorphic-boilerplate/archive/master.zip) and extract it to your development directory, then run:
+Clone the repository or [download a zip of the source code](https://github.com/axefrog/epicycle/archive/master.zip) and extract it to your development directory, then run:
 
 ```text
 npm install
@@ -74,7 +82,19 @@ To view the application, open [http://localhost:3000](http://localhost:3000) in 
 gulp build:dist
 ```
 
-Client bundles are compressed and minified for production builds only, as the refresh time is otherwise too slow when making many changes during development.
+Client bundles are compressed and minified for production builds only, as the refresh time is otherwise too slow when making many changes during development. Unit tests are also run when building for production in order to ensure that the build fails if any tests fail.
+
+## Unit Tests
+
+Mocha and Chai are integrated by default. As always, replacing them should be easy enough if you prefer to use something else. Your tests can be placed within the _src_ directory, as long as they exist at some depth within a _tests_ folder (you can have many _tests_ folders) or a file named _tests.js_ (again, as many of these as you like). In this way, you can have your unit tests bundled with each component, which makes it easy to keep related files together.
+
+Tests are disabled by default for the main gulp watch task in order to reduce rebuild/reload times during development, but if you're writing tests, you should run the test watcher, which quickly rebuilds and reruns tests when any changes are made. For the best of both worlds, run two terminals/shells/consoles; one for the test watcher and one for the default gulp development task.
+
+**To start the test watcher:**
+
+```text
+gulp test:dev
+```
 
 ## Usage and Best Practices
 
@@ -94,6 +114,19 @@ You'll notice the use of node_modules folders *within the source*. This is optio
 
 **Do not confuse this use of node_modules with the external dependencies installed by npm**. In our *.gitignore* file, we ignore only the root node_modules folder, which is where npm will be putting external dependencies, and we allow node_modules folders elsewhere. In essence, just think of these descendant node_modules folders as shared components folders that can be easily and cleanly referenced within our application. This solves the nasty problem of parent path hell (`require("../../../../../../components/foo")`) and gives us a way to both share components that are area-specific, in addition to those that are used sitewide. Take a look at [Ryan Florence's folder layout article](https://gist.github.com/ryanflorence/daafb1e3cb8ad740b346), which was the inspiration for this decision. Note that, because we're using `node_modules` and not some build-tool-specific hackery of the `require` function, it means that at a later date it's trivial to separate common components and helpers into an external npm package in order to allow them to be shared among multiple projects.
 
+## The State Driver, Component Helpers and Routing
+
+A simple client-side application has few concerns other than the need to wire a few user interface components together. A large application however must be able to deal with URLs and the concept of "pages". These bring with them additional concerns, such as:
+
+- Returning a correct HTTP status code on the first request
+- Changing the document title when the URL is changed locally (pushed to history)
+- Propagation of general page-related metadata that may be nested several layers deep
+- Potential serialization of page information when an alternate content type is requested (content negotiation)
+
+A new "state" driver has been created to help solve these issues. State is designed to emit snapshots of, obviously, the evolving state of the application as it reacts to changing inputs.
+
+*TODO: The rest of this section. Look at the existing code in src/app for example usage. Look in src/node_modules/common for the implementations of the patterns used in this project.*
+
 ## Roadmap
 
 ### Functionality
@@ -108,7 +141,4 @@ You'll notice the use of node_modules folders *within the source*. This is optio
 
 ### Build Process
 
-- add tests
-- fix sourcemaps for server-side code
-- fix ugly error message when babel compile fails
 - fix uglify processing: https://github.com/gulpjs/gulp/blob/master/docs/recipes/browserify-uglify-sourcemap.md

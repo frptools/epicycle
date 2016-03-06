@@ -1,6 +1,6 @@
 import {configureRoutes} from 'common/routing-helpers';
-import Home from './areas/home';
-import About from './areas/about';
+import Home from './areas/public/home';
+import About from './areas/public/about';
 import NotFound from './areas/errors/404';
 
 module.exports = configureRoutes([
