@@ -3,7 +3,7 @@
 
 Epicycle is a foundational/boilerplate project for building reactive, isomorphic applications with [Motorcycle.js](https://github.com/motorcyclejs/core) and [node.js](https://nodejs.org/en/).
 
-_NOTE: This project is a work in progress. The foundation should work pretty well, but the example application structure- the pages, navigation and content displayed- is unfinished, as is documentation for some of the abstractions I developed to support clean handling of navigation between pages._
+_NOTE: This project is a work in progress. I've been dogfooding it for a small SaaS application I've been building and in the process have improved and refactored a large quantity of the existing code. The foundational stuff showing separation between server and client code should be fine for ideas, but a commit in the near future will overhaul a lot of what you see here. I'd suggest starring the repository and waiting until the next commit, if you're interested in using this for your own work._
 
 ## Introduction
 
